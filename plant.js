@@ -1,22 +1,20 @@
 class Cell{
-  constructor(x, y, e) {
+  constructor(x, y, e,generation) {
     this.pos = createVector(x,y);
     this.energy = e;
     this.r = this.energy / 100;
     this.color = color(0,125,0);
     this.isSplitting = false;
+    this.generation = generation;
+    this.connectedCells = [];
 
     let options = {
-      restitution: 0.6,
+      restitution: 0.1,
     };
 
     this.body = Bodies.circle(x, y, this.r, options);
     this.body.plugin.particle = this;
-    Composite.add(engine.world, this.body);
-  }
-
-  checkEdge() {
-    return this.body.position.y > height + this.r;
+    Composite.add(world, this.body);
   }
 
   show() {
@@ -28,26 +26,49 @@ class Cell{
     pop();
   }
   
-  grow(){
-    this.energy += random(-25,30);
+  grow(universeEnergy){
+    console.log(universeEnergy)
+    this.energy += universeEnergy;
     this.r = this.energy / 100;
     this.body.radius = this.r;
   }
 
-  split(){
-    let splitProb = .5
-    if(random(0,1) < splitProb){
+  split(splitProb){
+    if(random(0,1) < splitProb && this.generation < 4){
       let newCell;
-      let cellRadius;
-      cellRadius = this.r
-      newCell = new Cell(this.body.position.x + random(-cellRadius,cellRadius),this.body.position.y+ + random(-cellRadius,cellRadius),this.energy/2);
+      let splitDirection = createVector(random(-1,1),random(-1,1));
+      let splitDistance = this.r/2;
+
+      let splitVector = splitDirection.copy().mult(splitDistance);
+
+      // Calculate the position for the new cell based on splitVector
+      let newX = this.body.position.x + splitVector.x;
+      let newY = this.body.position.y + splitVector.y;
+
+      push();
+      stroke(255);
+      strokeWeight(10);
+      line(this.pos.x,this.pos.y, newX,newY);
+      pop();
+      newCell = new Cell(newX, newY,this.energy/2, this.generation+1);
+      
       this.energy = this.energy/2;
+      var options = {
+          bodyA: this.body,
+          bodyB: newCell.body,
+          length: this.body.radius,
+          stiffness: 0.40
+      }
+      // var constraint = Constraint.create(options)
+      // Composite.add(world, constraint);
       return newCell;
     }
   }
 
-  update(){
-    this.grow();
+  update(universePower){
+    if(this.generation < 4){
+      this.grow(universePower);
+    }
   }
 }
 
